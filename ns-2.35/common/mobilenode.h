@@ -162,10 +162,6 @@ public:
 	/* For list-keeper */
 	MobileNode* nextX_;
 	MobileNode* prevX_;
-	inline Topography* get_topography() { return T_;}
-
-	// log the location information 
-	void log_loc(double, int, double, double);
 	
 protected:
 	/*

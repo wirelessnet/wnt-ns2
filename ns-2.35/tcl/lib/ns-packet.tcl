@@ -176,12 +176,19 @@ set protolist {
         MIP 	# Mobile IP, mobile/mip-reg.cc
 	Smac 	# Sensor-MAC
 	TORA 	# routing protocol for ad-hoc networks
+	UWVB      #underwatersensor
+	UWVBVA
+        uw_drouting
+	RMAC     
+	TMAC
+    	SFAMA
+	StaticRouting
+	UWANMac
+	OTMAN
+	UW_ALOHA
 	MDART 	# routing protocol for ad-hoc networks
 	# AOMDV patch
 	AOMDV
-	ZBR
-	LocReq	#Location Request 
-	LocRes	#Location Response
 # Other:
 	Encap 	# common/encap.cc
         IPinIP 	# IP encapsulation 

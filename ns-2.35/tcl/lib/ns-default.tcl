@@ -558,7 +558,7 @@ Node/MobileNode set X_				0
 Node/MobileNode set Y_				0
 Node/MobileNode set Z_				0
 Node/MobileNode set speed_				0
-Node/MobileNode set position_update_interval_	0
+Node/MobileNode set position_update_interval_	1.0
 Node/MobileNode set bandwidth_			0	;# not used
 Node/MobileNode set delay_				0	;# not used
 Node/MobileNode set REGAGENT_PORT 0
@@ -1591,15 +1591,99 @@ Agent/PBC set modulationScheme 0
 Agent/MDART set macFailed_ true
 Agent/MDART set etxMetric_ true
 
-Agent/mUDP set packetSize_ 1000
-Agent/ZBR set accessible_var_  true
-#Location discovery 
-Agent/LocReq set packetSize_ 100 
-Agent/LocRes set packetSize_ 100
-Application/LocDiscovery set distanceError_ 0	;# considering distance measurement 	error, enable(1) or disable (0) 
-Application/LocDiscovery set random_ 0 
-Application/LocDiscovery set reqFreq_ 5.0		;# every 5.0 sec 
-Application/LocDiscovery set maxRequests_ 268435456	;# 0x10000000 
-Application/LocDiscovery set showColor_ 1	;# Node colouring, enable(1) or disable(0)
-Application/LocDiscovery set method_ 1		;# Localisation algorithm, general method (1), nearest3(2), refinement(3)
-Simulator set attribute_ ""
+Application/Traffic/UW_POI set maxpkts_ -1 ;# infinity
+Application/Traffic/UW_POI set data_rate_ -1 ;# for checking error purpose
+Application/Traffic/UW_POI set packetSize_ -1 ;# same as data_rate
+# The following is added by Peng Xie
+Node/MobileNode/UnderwaterSensorNode set  sinkStatus_ 0 
+Node/MobileNode/UnderwaterSensorNode  set max_speed   0  
+Node/MobileNode/UnderwaterSensorNode set min_speed    0  
+Node/MobileNode/UnderwaterSensorNode set position_update_interval_  1.0 
+Node/MobileNode/UnderwaterSensorNode set max_thought_time_ 3.0
+
+#added by Peng Xie
+Mac/UnderwaterMac/BroadcastMac set packetheader_size_ 8 ;# 40 bytes
+Mac/UnderwaterMac/BroadcastMac set packet_size_ 0 ;# 
+Mac/UnderwaterMac/RMac set PhaseOne_window_  3 ;# 2 second
+Mac/UnderwaterMac/RMac set ND_window_  1 ;# 1 second
+Mac/UnderwaterMac/RMac set ACKND_window_  1.5 ;# 1.5 second
+Mac/UnderwaterMac/RMac set PhyOverhead_  8 ;# 8 bits 
+Mac/UnderwaterMac/RMac set PhyOne_cycle_  1 ;# 8 bits 
+Mac/UnderwaterMac/RMac set large_packet_size_  80   ;# 10 bytes 
+Mac/UnderwaterMac/RMac set short_packet_size_  480  ;# 60 bytes
+Mac/UnderwaterMac/RMac set IntervalPhase2Phase3 1  ;# 60 bytes
+Mac/UnderwaterMac/RMac set PhaseTwo_window_  1
+Mac/UnderwaterMac/RMac set duration_  0.1
+Mac/UnderwaterMac/RMac set PeriodInterval_  1
+Mac/UnderwaterMac/RMac set SIF_  0.00001
+Mac/UnderwaterMac/RMac set ACKRevInterval_  0.08  
+Mac/UnderwaterMac/TMac set PhaseOne_window_  3 ;# 2 second
+Mac/UnderwaterMac/TMac set ND_window_  1 ;# 1 second
+Mac/UnderwaterMac/TMac set ACKND_window_  1.5 ;# 1.5 second
+Mac/UnderwaterMac/TMac set PhyOverhead_  8 ;# 8 bits 
+Mac/UnderwaterMac/TMac set PhyOne_cycle_  1 ;# 8 bits 
+Mac/UnderwaterMac/TMac set large_packet_size_  80   ;# 10 bytes 
+Mac/UnderwaterMac/TMac set short_packet_size_  480  ;# 60 bytes
+Mac/UnderwaterMac/TMac set IntervalPhase2Phase3 1  ;# 60 bytes
+Mac/UnderwaterMac/TMac set PhaseTwo_window_  1
+Mac/UnderwaterMac/TMac set duration_  0.1
+Mac/UnderwaterMac/TMac set PeriodInterval_  1
+Mac/UnderwaterMac/TMac set SIF_  0.00001
+#Mac/UnderwaterMac/TMac set ACKRevInterval_  0.08  
+Mac/UnderwaterMac/TMac set transmission_time_error_  0.001
+Mac/UnderwaterMac/TMac set ContentionWindow_  0.1
+Mac/UnderwaterMac/TMac set TransmissionRange_ 90
+Mac/UnderwaterMac/UWANMac set AvgCyclePeriod 10
+Mac/UnderwaterMac/UWANMac set StdCyclePeriod 1
+Mac/UnderwaterMac/OTMAN set NDInterval 3
+Mac/UnderwaterMac/OTMAN set DataAccuPeriod 1
+Mac/UnderwaterMac/OTMAN set RevAckAccumTime 1
+Mac/UnderwaterMac/OTMAN set DataAckAccumTime 1
+Mac/UnderwaterMac/OTMAN set MajorBackupInterval 0.5
+Mac/UnderwaterMac/OTMAN set MajorIntervalLB 2
+Mac/UnderwaterMac/OTMAN set MajorIntervalUB 3
+Mac/UnderwaterMac/OTMAN set GuardTime 0.01
+Mac/UnderwaterMac/OTMAN set isParallel 1
+
+Mac/UnderwaterMac/FAMA set MaxBurst 1
+
+#Mac/UnderwaterMac/SFAMA set max_burst_ 1
+#Mac/UnderwaterMac/SFAMA set guard_time_ 0.00001
+#Mac/UnderwaterMac/SFAMA set max_backoff_slots_ 4
+
+#added by peng xie
+Phy/UnderwaterPhy set CPThresh_ 10.0
+Phy/UnderwaterPhy set CSThresh_ 1.559e-11
+Phy/UnderwaterPhy set RXThresh_ 3.652e-10
+#Phy/UnderwaterPhy set bandwidth_ 2e6
+Phy/UnderwaterPhy set Pt_ 0.28183815
+Phy/UnderwaterPhy set freq_ 914e+6
+Phy/UnderwaterPhy set L_ 1.0  
+Phy/UnderwaterPhy set debug_ false
+Phy/UnderwaterPhy set K_ 1.5
+Phy/UnderwaterPhy set TurnOnEnergy 0.0
+Phy/UnderwaterPhy set TurnOffEnergy 0.0
+Phy/UnderwaterPhy set sync_hdr_len  0.0
+Phy/UnderwaterPhy set fowarding_delay 0.0
+Phy/UnderwaterPhy set bit_error_rate 0.0
+
+#added by Peng Xie 
+Agent/UWSink set data_rate_ 1.0 
+Agent/UWSink set packetsize_ 50 ;#bytes
+Agent/UWSink set random_ 0 
+Agent/UWSink set passive 0 
+Agent/UWSink set ActiveSense 0
+Agent/UWSink set SenseInterval 30
+#Agent/UWSink set activate_vbf  1
+Agent/UW_VBVA_Sink set data_rate_ 1.0 
+Agent/UW_VBVA_Sink set packetsize_ 50 ;#bytes
+Agent/UW_VBVA_Sink set random_ 0 
+Agent/UW_VBVA_Sink set passive 0 
+Agent/Vectorbasedforward set width 100
+Agent/Vectorbasedforward set control_packet_size 20
+Agent/Vectorbasedforward set hop_by_hop_ 0
+Agent/Vectorbasedforward set EnableRouting 1 
+Agent/VectorbasedVoidAvoidance set width 100
+Agent/VectorbasedVoidAvoidance set  control_packet_size 20  
+Agent/uw_drouting set accessible_var_ true
+

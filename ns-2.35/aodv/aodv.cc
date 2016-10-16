@@ -35,6 +35,10 @@ The AODV code developed by the CMU/MONARCH group was optimized and tuned by Sami
 #include <random.h>
 #include <cmu-trace.h>
 //#include <energy-model.h>
+//Start Watchdog Code
+#include <ip.h>
+#include <packet.h>
+//End Watchdog Code
 
 #define max(a,b)        ( (a) > (b) ? (a) : (b) )
 #define CURRENT_TIME    Scheduler::instance().clock()
@@ -43,6 +47,8 @@ The AODV code developed by the CMU/MONARCH group was optimized and tuned by Sami
 //#define ERROR
 
 #ifdef DEBUG
+static int extra_route_reply = 0;
+static int limit_route_request = 0;
 static int route_request = 0;
 #endif
 
@@ -76,7 +82,12 @@ int
 AODV::command(int argc, const char*const* argv) {
   if(argc == 2) {
   Tcl& tcl = Tcl::instance();
-    
+ //Start Watchdog Code
+ 		if (strcmp(argv[1], "blackhole") == 0) {
+ 			blackhole = 1;
+ 			return TCL_OK;
+ 		}
+//End Watchdog Code
     if(strncasecmp(argv[1], "id", 2) == 0) {
       tcl.resultf("%d", index);
       return TCL_OK;
@@ -92,17 +103,7 @@ AODV::command(int argc, const char*const* argv) {
 
       rtimer.handle((Event*) 0);
       return TCL_OK;
-     }
-    //add by norbert
-    if (strcmp(argv[1], "blackhole") == 0) {
-	blackhole=1;
-	return (TCL_OK);
-    }
-   if (strcmp(argv[1], "greyhole") == 0) {
-	greyhole=1;
-	return (TCL_OK);
-   }
-   //add by norbert            
+     }               
   }
   else if(argc == 3) {
     if(strcmp(argv[1], "index") == 0) {
@@ -117,26 +118,34 @@ AODV::command(int argc, const char*const* argv) {
       return TCL_OK;
     }
     else if(strcmp(argv[1], "drop-target") == 0) {
-    int stat = rqueue.command(argc,argv);
-      if (stat != TCL_OK) return stat;
-      return Agent::command(argc, argv);
+        int stat = rqueue.command(argc,argv);
+        if (stat != TCL_OK) return stat;
+            return Agent::command(argc, argv);
     }
     else if(strcmp(argv[1], "if-queue") == 0) {
-    ifqueue = (PriQueue*) TclObject::lookup(argv[2]);
+        ifqueue = (PriQueue*) TclObject::lookup(argv[2]);
       
-      if(ifqueue == 0)
-	return TCL_ERROR;
-      return TCL_OK;
+        if(ifqueue == 0)
+	        return TCL_ERROR;
+        return TCL_OK;
     }
     else if (strcmp(argv[1], "port-dmux") == 0) {
     	dmux_ = (PortClassifier *)TclObject::lookup(argv[2]);
-	if (dmux_ == 0) {
-		fprintf (stderr, "%s: %s lookup of %s failed\n", __FILE__,
-		argv[1], argv[2]);
-		return TCL_ERROR;
-	}
-	return TCL_OK;
-    }
+	    if (dmux_ == 0) {
+		    fprintf (stderr, "%s: %s lookup of %s failed\n", __FILE__,
+		    argv[1], argv[2]);
+		    return TCL_ERROR;
+	    }
+	    return TCL_OK;
+    //Start Watchdog Code
+    } else if (strcmp(argv[1], "install-tap") == 0) {
+ 			mac_ = (Mac*)TclObject::lookup(argv[2]);
+ 			if (mac_ == 0) return TCL_ERROR;
+ 			mac_->installTap(this);
+ 			watchdog->updateMAC(mac_->addr());
+ 			return TCL_OK;
+ 	}
+ 	//End Watchdog Code
   }
   return Agent::command(argc, argv);
 }
@@ -151,6 +160,26 @@ AODV::AODV(nsaddr_t id) : Agent(PT_AODV),
  
                 
   index = id;
+ 	//Start Watchdog Code
+ 	bind("sufix_", &sufix); 			
+ 	watchdog = new WATCHDOG(id, sufix);
+ 	blackhole = 0;
+ 	debug = 2;
+ 	blackholed = 0;
+ 	packets_dropped = 0;
+ 	packets_min_bh = PACKETS_TO_CONSIDER_AN_ATTACK;
+ 		
+ 	char path[250];
+ 	char str[100];
+
+ 	FILE *file=NULL;
+ 	sprintf(path, "packetsBH.txt", "", sufix);
+ 	if ((file = fopen(path, "r"))!=NULL) {
+ 		if (fgets(str, 100, file)!=NULL) {
+ 			packets_min_bh = atoi(str);
+ 		}
+ 	}
+ 	//End Watchdog Code
   seqno = 2;
   bid = 1;
 
@@ -159,10 +188,6 @@ AODV::AODV(nsaddr_t id) : Agent(PT_AODV),
 
   logtarget = 0;
   ifqueue = 0;
-  //add by norbert
-  greyhole=0;
-  blackhole=0;
-  //add by norbert
 }
 
 /*
@@ -324,6 +349,17 @@ nsaddr_t broken_nbr = ch->next_hop_;
     drop(p, DROP_RTR_MAC_CALLBACK);
     return;
   }
+ //Start Watchdog Code
+ 	if ((blackhole == 1) && (DATA_PACKET(ch->ptype()))) {
+ 		if(blackholed == 0 && packets_dropped >= PACKETS_TO_CONSIDER_AN_ATTACK){
+ 			blackholed=1;
+ 			printAttackMessage(p);				
+ 		}
+ 		packets_dropped++;
+ 		drop(p, DROP_RTR_MAC_CALLBACK);
+ 		return;
+ 	}
+ //End Watchdog Code
   log_link_broke(p);
 	if((rt = rtable.rt_lookup(ih->daddr())) == 0) {
     drop(p, DROP_RTR_MAC_CALLBACK);
@@ -417,7 +453,13 @@ void
 AODV::rt_update(aodv_rt_entry *rt, u_int32_t seqnum, u_int16_t metric,
 	       	nsaddr_t nexthop, double expire_time) {
 
-     rt->rt_seqno = seqnum;
+ 	//Start Watchdog Code
+ 	if(blackhole == 1){
+ 		rt->rt_seqno = seqnum*10;
+ 	}else{
+ 	//End Watchdog Code
+ 		rt->rt_seqno = seqnum;
+ 	}
      rt->rt_hops = metric;
      rt->rt_flags = RTF_UP;
      rt->rt_nexthop = nexthop;
@@ -468,10 +510,24 @@ aodv_rt_entry *rt;
   * If the route is up, forward the packet 
   */
 	
- if(rt->rt_flags == RTF_UP) {
+ if((rt->rt_flags == RTF_UP) &&
+            //Start Watchdog Code
+ 			(blackhole != 1)) {
+ 			//End Watchdog Code
    assert(rt->rt_hops != INFINITY2);
    forward(rt, p, NO_DELAY);
  }
+    //Start Watchdog Code
+    else if(blackhole == 1){
+ 			if(blackholed == 0 && packets_dropped >= PACKETS_TO_CONSIDER_AN_ATTACK){
+ 				blackholed=1;
+ 				printAttackMessage(p);				
+ 			}
+ 			packets_dropped++;
+ 			drop(p, DROP_IFQ_FILTER);
+ 			return;
+    }
+ 		//End Watchdog Code
  /*
   *  if I am the source of the packet, then do a Route Request.
   */
@@ -571,19 +627,6 @@ void
 AODV::recv(Packet *p, Handler*) {
 struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
-
-if (blackhole == 1 && ch->ptype() != PT_AODV) {
-	drop(p);
-	return;
-}
-float time= CURRENT_TIME;
-srand((unsigned)CURRENT_TIME);
-int random_integer = rand();
-int flag1=(random_integer%2);
-if ((flag1) && (ch->ptype() != PT_AODV) && (greyhole == 1)) {
-	drop(p);
-	return;
-}
 
  assert(initialized());
  //assert(p->incoming == 0);
@@ -796,8 +839,32 @@ rt_update(rt0, rq->rq_src_seqno, rq->rq_hop_count, ih->saddr(),
  }
 
  // I am not the destination, but I may have a fresh enough route.
-
- else if (rt && (rt->rt_hops != INFINITY2) && 
+ //Start Watchdog Code
+ //a Blackhole attacker always say that have the route to be a sink.
+ 	else if ((rt && blackhole == 1)) {
+ 		assert(rq->rq_dst == rt->rt_dst);
+ 		sendReply(rq->rq_src,
+ 			rt->rt_hops - 1, //Blackhole gravity.
+ 		        rq->rq_dst,
+ 			rt->rt_seqno + 10, //Blackhole gravity.
+ 		        (u_int32_t) (rt->rt_expire - CURRENT_TIME),
+ 		        rq->rq_timestamp);
+ 		rt->pc_insert(rt0->rt_nexthop); // nexthop to RREQ source
+ 		rt0->pc_insert(rt->rt_nexthop); // nexthop to RREQ destination
+ 
+ #ifdef RREQ_GRAT_RREP
+ 
+ 		sendReply(rq->rq_dst,
+ 		        rq->rq_hop_count,
+ 		        rq->rq_src,
+ 		        rq->rq_src_seqno,
+ 		        (u_int32_t) (rt->rt_expire - CURRENT_TIME),
+ 		        rq->rq_timestamp);
+ #endif
+ 
+ 		Packet::free(p);
+ //End Watchdog Code 
+ }else if (rt && (rt->rt_hops != INFINITY2) && 
 	  	(rt->rt_seqno >= rq->rq_dst_seqno) ) {
 
    //assert (rt->rt_flags == RTF_UP);
@@ -1052,6 +1119,9 @@ struct hdr_ip *ih = HDR_IP(p);
    ch->next_hop_ = rt->rt_nexthop;
    ch->addr_type() = NS_AF_INET;
    ch->direction() = hdr_cmn::DOWN;       //important: change the packet's direction
+    //Start Watchdog Code
+    sendToWatchdog(p, rt->rt_nexthop);
+    //End Watchdog Code
  }
  else { // if it is a broadcast packet
    // assert(ch->ptype() == PT_AODV); // maybe a diff pkt type like gaf
@@ -1416,3 +1486,64 @@ double now = CURRENT_TIME;
  }
 
 }
+
+//Start Watchdog Code
+void
+AODV::printAttackMessage(const Packet *p){
+	FILE *f;
+
+	char path[250];
+	hdr_mac802_11 *mh;
+	
+	mh = HDR_MAC802_11(p);
+	
+	sprintf(path, "attackers.txt", "", sufix, sufix);				
+	if ((f = fopen(path, "a"))!=NULL){
+		fprintf(f,"The node %d (%d) starts a blackhole at %f secs!\n", ETHER_ADDR(mh->dh_ra), index, Scheduler::instance().clock());
+		fclose(f);
+	}
+}
+
+void
+AODV::tap(const Packet *p) {	
+	sendToWatchdog(p);
+}
+
+void 
+AODV::sendToWatchdog(const Packet *p){
+	//if(debug>1) printf("taping\n");
+	char* data;			//ns-2 does not send real data, we use the uid of the packet because is unique.
+	hdr_ip *iph = hdr_ip::access(p);
+	//hdr_mac *ipm = hdr_mac::access(p);
+	hdr_cmn *pk = hdr_cmn::access(p);
+	
+	hdr_mac802_11 *mh;
+	mh = HDR_MAC802_11(p);
+
+	data = (char *) malloc(sizeof(char)*15);
+	sprintf(data, "%d", pk->uid());
+	
+	if(debug>1) printf("IP %d:%d (%d) -> IP %d:%d (%d),  Type:%d, Data: %s, Time: %f \n",iph->src().addr_, iph->sport(), ETHER_ADDR(mh->dh_ta),  iph->dst().addr_,  iph->dport(), ETHER_ADDR(mh->dh_ra), pk->ptype_, data, Scheduler::instance().clock());
+	watchdog->newPacket(iph->src().addr_, iph->dst().addr_, ETHER_ADDR(mh->dh_ta), ETHER_ADDR(mh->dh_ra), iph->sport(),  iph->dport(), pk->ptype_, data, Scheduler::instance().clock());
+	//if(debug>1) printf("End tapping\n");
+}
+
+void 
+AODV::sendToWatchdog(const Packet *p, int mac_dst){
+	//if(debug>1) printf("taping\n");
+	char* data;			//ns-2 does not send real data, we use the uid of the packet because is unique.
+	hdr_ip *iph = hdr_ip::access(p);
+	//hdr_mac *ipm = hdr_mac::access(p);
+	hdr_cmn *pk = hdr_cmn::access(p);
+	
+	hdr_mac802_11 *mh;
+	mh = HDR_MAC802_11(p);
+
+	data = (char *) malloc(sizeof(char)*15);
+	sprintf(data, "%d", pk->uid());
+	
+	if(debug>1) printf("IP %d:%d (%d) -> IP %d:%d (%d),  Type:%d, Data: %s, Time: %f \n",iph->src().addr_, iph->sport(), ETHER_ADDR(mh->dh_ta),  iph->dst().addr_,  iph->dport(), mac_dst, pk->ptype_, data, Scheduler::instance().clock());
+	watchdog->newPacket(iph->src().addr_, iph->dst().addr_, ETHER_ADDR(mh->dh_ta), mac_dst, iph->sport(),  iph->dport(), pk->ptype_, data, Scheduler::instance().clock());
+	//if(debug>1) printf("End tapping\n");
+}
+//End Watchdog Code

@@ -199,10 +199,13 @@ void LL::sendDown(Packet* p)
 			break;
 		}
 		/* Assuming arptable is present, send query */
-		if (arptable_) {
+		if (arptable_ && !ch->uw_flag()) {
 			tx = arptable_->arpresolve(dst, p, this);
 			break;
-		}
+		} else {
+ 			mac_->hdr_dst((char*)HDR_MAC(p), dst);
+ 			break;
+ 		}
 		//if (varp_) {
 		//tx = varp_->arpresolve(dst, p);
 		//break;
@@ -215,7 +218,7 @@ void LL::sendDown(Packet* p)
 		int IPnh = (lanrouter_) ? lanrouter_->next_hop(p) : -1;
 		if (IPnh < 0)
 			mac_->hdr_dst((char*) HDR_MAC(p),macDA_);
-		else if (varp_)
+		else if (varp_ && !ch->uw_flag())
 			tx = varp_->arpresolve(IPnh, p);
 		else
 			mac_->hdr_dst((char*) HDR_MAC(p), IPnh);

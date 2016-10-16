@@ -66,7 +66,7 @@ Node instproc init args {
 	eval $self next $args
 
         $self instvar id_ agents_ dmux_ neighbor_ rtsize_ address_ \
-			nodetype_ multiPath_ ns_ rtnotif_ ptnotif_ nodeAttribute_
+			nodetype_ multiPath_ ns_ rtnotif_ ptnotif_
 
 	set ns_ [Simulator instance]
 	set id_ [Node getid]
@@ -102,11 +102,6 @@ Node instproc mk-default-classifier {} {
 	foreach modname [Node set module_list_] {
 		$self register-module [new RtModule/$modname]
 	}
-}
-
-#Location discovery 
-Node instproc attribute {} { 
-	return [$self set nodeAttribute_] 
 }
 
 Node instproc id {} {

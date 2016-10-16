@@ -46,7 +46,7 @@
 class Topography : public TclObject {
 
 public:
-	Topography() { maxX = maxY = grid_resolution = 0.0; grid = 0; }
+	Topography() { maxX = maxY = maxZ = grid_resolution = 0.0; grid = 0; }
 
 	/* List-keeper */
 	void updateNodesList(class MobileNode *mn, double oldX);
@@ -55,16 +55,20 @@ public:
 	double	upperX() { return maxX * grid_resolution; }
 	double	lowerY() { return 0.0; }
 	double	upperY() { return maxY * grid_resolution; }
+ 	double	lowerZ() { return 0.0; }
+ 	double	upperZ() { return maxZ * grid_resolution; }
 	double	resol() { return grid_resolution; }
 	double	height(double x, double y);
 
 private:
 	virtual int command(int argc, const char*const* argv);
 	int	load_flatgrid(int x, int y, int res = 1);
+	int	load_cubicgrid(int x, int y, int z,int res = 1);
 	int	load_demfile(const char *fname);
 
 	double	maxX;
 	double	maxY;
+	double  maxZ;// added by Peng Xie
 
 	double	grid_resolution;
 	int*	grid;

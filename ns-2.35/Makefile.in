@@ -72,7 +72,7 @@ INCLUDES = \
 	-I./diffusion3/lib/nr -I./diffusion3/ns \
 	-I./diffusion3/filter_core -I./asim/ -I./qs \
 	-I./diffserv -I./satellite \
-	-I./wpan -I./location
+	-I./wpan
 
 
 LIB	= \
@@ -333,14 +333,34 @@ OBJ_CC = \
 	wpan/p802_15_4sscs.o wpan/p802_15_4timer.o \
 	wpan/p802_15_4trace.o wpan/p802_15_4transac.o \
 	apps/pbc.o \
-	mudp/mudp.o mudp/mudpsink.o \
-	mac/mac-802_16/mac-802_16.o mac/mac-802_16/packet-802_16.o mac/mac-802_16/timer-802_16.o \
-	mac/mac-802_16/traffic/BE_traffic.o mac/mac-802_16/traffic/ertPS_traffic.o mac/mac-802_16/traffic/nrtPS_traffic.o \
-	mac/mac-802_16/traffic/rtPS_traffic.o mac/mac-802_16/traffic/UGS_traffic.o \
-	fsr/fsr.o fsr/fsr_rtable.o fsr/fsr_ttable.o \
-	zbr/zbr.o zbr/zbr_rtable.o zbr/zbr_rqueue.o zbr/zbr_link.o \
-	location/locationrequest.o location/locationresponse.o location/locationdiscovery.o \
-	location/mmse.o location/position.o location/nearestposition.o location/refineposition.o \
+    underwatersensor/uw_common/underwatersensornode.o \
+    underwatersensor/uw_common/uw_hash_table.o  \
+    underwatersensor/uw_common/uw_sink.o \
+    underwatersensor/uw_common/uw_sink_vbva.o  \
+    underwatersensor/uw_common/uw_poi_traffic.o \
+    underwatersensor/uw_routing/vectorbasedforward.o \
+    underwatersensor/uw_routing/uw_drouting/uw_drouting_rtable.o \
+    underwatersensor/uw_routing/uw_drouting/uw_drouting.o \
+    underwatersensor/uw_routing/uw_routing_buffer.o \
+    underwatersensor/uw_routing/vectorbasedvoidavoidance.o \
+    underwatersensor/uw_routing/static_routing/static_routing.o \
+    underwatersensor/uw_mac/underwaterpropagation.o  \
+    underwatersensor/uw_mac/underwaterchannel.o \
+    underwatersensor/uw_mac/underwaterphy.o  \
+    underwatersensor/uw_mac/underwatermac.o \
+    underwatersensor/uw_mac/broadcastmac.o \
+    underwatersensor/uw_mac/uwbuffer.o underwatersensor/uw_mac/rmac.o  \
+    underwatersensor/uw_mac/tmac.o \
+    underwatersensor/uw_mac/uwan-mac/uwan-mac-pkt.o underwatersensor/uw_mac/uwan-mac/uwan-mac.o \
+    underwatersensor/uw_mac/COPEMAC/copemac.o \
+    underwatersensor/uw_mac/FAMA/fama.o \
+    underwatersensor/uw_mac/slotted-fama/sfama.o \
+    underwatersensor/uw_mac/uwaloha/uwaloha.o \
+    underwatersensor/uw_mobility_pattern/uw_mobility_pattern.o \
+    underwatersensor/uw_mobility_pattern/uw_mobility_rwp.o \
+    underwatersensor/uw_mobility_pattern/uw_mobility_kinematic.o \
+    dbr/dbr.o dbr/pkt_cache.o aodv/watchdog/beta.o aodv/watchdog/neighbours.o \
+    aodv/watchdog/packets.o aodv/watchdog/watchdog.o \
 	@V_STLOBJ@
 
 
@@ -502,7 +522,6 @@ NS_TCL_LIB = \
 	tcl/mcast/McastMonitor.tcl \
 	tcl/mobility/dsdv.tcl \
 	tcl/mobility/dsr.tcl \
-	tcl/mobility/fsr.tcl \
         tcl/ctr-mcast/CtrMcast.tcl \
         tcl/ctr-mcast/CtrMcastComp.tcl \
         tcl/ctr-mcast/CtrRPComp.tcl \
@@ -533,6 +552,7 @@ NS_TCL_LIB = \
 	tcl/lib/ns-srcrt.tcl \
 	tcl/mcast/ns-lms.tcl \
 	tcl/lib/ns-qsnode.tcl \
+	tcl/lib/ns-underwatersensornode.tcl \
 	@V_NS_TCL_LIB_STL@
 
 $(GEN_DIR)ns_tcl.cc: $(NS_TCL_LIB)
@@ -587,12 +607,12 @@ distclean-recursive:
 
 tags:	force
 	ctags -wtd *.cc *.h webcache/*.cc webcache/*.h dsdv/*.cc dsdv/*.h \
-	fsr/*.cc fsr/*.h dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
+	dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
 	../Tcl/*.cc ../Tcl/*.h 
 
 TAGS:	force
 	etags *.cc *.h webcache/*.cc webcache/*.h dsdv/*.cc dsdv/*.h \
-	fsr/*.cc fsr/*.h dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
+	dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
 	../Tcl/*.cc ../Tcl/*.h
 
 tcl/lib/TAGS:	force

@@ -36,12 +36,15 @@ The AODV code developed by the CMU/MONARCH group was optimized and tuned by Sami
 //#include <sys/types.h>
 //#include <cmu/list.h>
 //#include <scheduler.h>
-
+#include <mac.h>
+#include <mac-802_11Ext.h>
 #include <cmu-trace.h>
 #include <priqueue.h>
 #include <aodv/aodv_rtable.h>
 #include <aodv/aodv_rqueue.h>
 #include <classifier/classifier-port.h>
+#include "watchdog/watchdog.h"
+#include <stdlib.h>
 
 /*
   Allows local repair of routes 
@@ -121,7 +124,9 @@ class AODV;
 #define BAD_LINK_LIFETIME       3               // 3000 ms
 #define MaxHelloInterval        (1.25 * HELLO_INTERVAL)
 #define MinHelloInterval        (0.75 * HELLO_INTERVAL)
-
+//Start Watchdog code
+#define PACKETS_TO_CONSIDER_AN_ATTACK	0
+//End Watchdog code
 /*
   Timers (Broadcast ID, Hello, Neighbor Cache, Route Cache)
 */
@@ -191,7 +196,7 @@ LIST_HEAD(aodv_bcache, BroadcastID);
 /*
   The Routing Agent
 */
-class AODV: public Agent {
+class AODV: public Tap, public Agent {
 
   /*
    * make some friends first 
@@ -203,16 +208,28 @@ class AODV: public Agent {
         friend class NeighborTimer;
         friend class RouteCacheTimer;
         friend class LocalRepairTimer;
+private:
+    //Start Watchdog code
+ 	
+ 	int blackhole;
+ 	WATCHDOG* watchdog;
+ 	int debug;
+ 	void 	sendToWatchdog(const Packet *p);
+ 	void		sendToWatchdog(const Packet *p, int mac_dst);
+ 	
+ 	int blackholed;
+ 	int	sufix;
+ 	float packets_dropped;
+ 	void printAttackMessage(const Packet *p);
+ 	int packets_min_bh;
+ 	//End Watchdog code
 
  public:
         AODV(nsaddr_t id);
 
         void		recv(Packet *p, Handler *);
-	//add by norbert
-	int blackhole;
-	int greyhole;
-	//add by norbert
-
+        void		tap(const Packet *p);
+        Mac *mac_;
  protected:
         int             command(int, const char *const *);
         int             initialized() { return 1 && target_; }

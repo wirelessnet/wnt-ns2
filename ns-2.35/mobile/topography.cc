@@ -83,6 +83,20 @@ Topography::load_flatgrid(int x, int y, int res)
 	return 0;
 }
 
+//added by Peng Xie
+ 
+int
+Topography::load_cubicgrid(int x, int y,int z, int res)
+{
+ 	/* No Reason to malloc a grid */
+ 
+ 	grid_resolution = res;	// default is 1 meter
+ 	maxX = (double) x;
+ 	maxY = (double) y;
+       maxZ = (double) z; 
+ 	return 0;
+}
+
 
 int
 Topography::load_demfile(const char *fname)
@@ -165,7 +179,17 @@ Topography::command(int argc, const char*const* argv)
 			if(load_flatgrid(atoi(argv[2]), atoi(argv[3]), atoi(argv[4])))
 				return TCL_ERROR;
 			return TCL_OK;
-		}
-	}
+		} else if(strcmp(argv[1], "load_cubicgrid") == 0) {
+ 			if(load_cubicgrid(atoi(argv[2]), atoi(argv[3]),atoi(argv[4])))
+ 				return TCL_ERROR;
+ 			return TCL_OK;
+ 		}
+ 	} else if(argc == 6) {
+ 		if(strcmp(argv[1], "load_cubicgrid") == 0) {
+ 			if(load_cubicgrid(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),atoi(argv[5])))
+ 		      	return TCL_ERROR;
+ 			return TCL_OK;
+ 		}
+  	}
 	return TclObject::command(argc, argv);
 }

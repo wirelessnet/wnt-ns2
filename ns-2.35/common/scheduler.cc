@@ -140,7 +140,7 @@ Scheduler::run()
 void
 Scheduler::dispatch(Event* p, double t)
 {
-	if (t < clock_) {
+	/*if (t < clock_) {
 		fprintf(stderr, "ns: scheduler going backwards in time from %f to %f.\n", clock_, t);
 		abort();
 	}
@@ -148,6 +148,24 @@ Scheduler::dispatch(Event* p, double t)
 	clock_ = t;
 	p->uid_ = -p->uid_;	// being dispatched
 	p->handler_->handle(p);	// dispatch
+	*/
+
+	if ((t < clock_) && (p->uid_ != 0)) {
+		fprintf(stderr, "ns: scheduler going backwards in time from %f to %f.\n", clock_, t);
+		printf("Current Event:\n");
+		printf("t:%f uid: ", p->time_);
+		printf(UID_PRINTF_FORMAT, p->uid_);
+		printf(" handler: %p\n", p->handler_);
+		dumpq();
+		abort();
+	}
+	if (p->uid_ != 0) { // will this kill the sim by not running a handler?
+ 		clock_ = t;
+ 		p->uid_ = -p->uid_;     // being dispatched
+ 		p->handler_->handle(p); // dispatch
+ 	} else {
+ 		fprintf(stderr, "Warning: discarding Event without an a valid id\n");
+ 	}
 }
 
 void

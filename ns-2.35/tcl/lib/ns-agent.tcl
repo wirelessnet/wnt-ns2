@@ -137,6 +137,68 @@ Agent/CBR/UDP/SA instproc attach-tbf { tbf } {
 	$self ctrl-target [$tbf target]
 }
 
+#add by Peng Xie
+ 
+Agent/UWSink instproc attach-vectorbasedforward {w1} {
+  $self instvar node_
+  set rt [$node_ set ragent_]
+  $rt on-node $node_
+  $self on-node $node_
+  #puts " Agent/UWsink:[$self set agent_port_]"
+  #set port [$self set agent_port_]
+  $rt port-dmux $self
+  $rt set width $w1
+  #$rt set-port [$self set agent_port_]
+  set entrance [$node_  entry]
+  #set demux [$node_ demux_]
+  #puts " [$entrance defaulttarget]"
+  #$rt  name
+  $self attach-rt-agent $entrance
+  #$self attach-rt-agent $rt
+}
+ 
+Agent/UWSink instproc attach-uwflooding { } {
+  $self instvar node_
+  set rt [$node_ set ragent_]
+  $rt on-node $node_
+  $self on-node $node_
+  #puts " Agent/UWsink:[$self set agent_port_]"
+  #set port [$self set agent_port_]
+  $rt port-dmux $self
+  #$rt set-port [$self set agent_port_]
+  set entrance [$node_  entry]
+  $self attach-rt-agent $entrance
+  #$self attach-rt-agent $rt
+}
+ 
+Agent/UWSink instproc attach-routing { } {
+  $self instvar node_
+  set rt [$node_ set ragent_]
+  #$rt on-node $node_
+  $self on-node $node_
+  #puts " Agent/UWsink:[$self set agent_port_]"
+  #set port [$self set agent_port_]
+  $rt port-dmux $self
+  #$rt set-port [$self set agent_port_]
+  set entrance [$node_  entry]
+  $self attach-rt-agent $entrance
+  #$self attach-rt-agent $rt
+}
+ 
+Agent/UW_VBVA_Sink instproc attach-routing { } {
+  $self instvar node_
+  set rt [$node_ set ragent_]
+  $rt on-node $node_
+  $self on-node $node_
+  #puts " Agent/UWsink:[$self set agent_port_]"
+  #set port [$self set agent_port_]
+  $rt port-dmux $self
+  #$rt set-port [$self set agent_port_]
+  set entrance [$node_  entry]
+  $self attach-rt-agent $entrance
+  #$self attach-rt-agent $rt
+}
+
 #
 # A lot of agents want to store the maxttl locally.  However,
 # setting a class variable based on the Agent::ttl_ variable

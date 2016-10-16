@@ -41,7 +41,9 @@
 #define ns_propagation_h
 
 #define SPEED_OF_LIGHT	300000000		// 3 * 10^8 m/s
-#define PI		3.1415926535897
+#ifndef PI
+ 	#define PI		3.1415926535897
+#endif
 
 
 #include <topography.h>

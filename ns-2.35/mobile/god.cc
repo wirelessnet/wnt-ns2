@@ -88,6 +88,8 @@ God::God()
 	num_send = 0;
 	active = false;
 	allowTostop = false;
+	// added by norbert
+	strcpy(f_name,"test.data");
 }
 
 
@@ -515,6 +517,26 @@ void God::CountAliveNode()
 
 }
 
+//added by  peng xie
+double God::ConsumpedEnergy()
+{
+	int i;
+	double sum=0.0;
+	FILE * fp;
+	if ((fp=fopen(f_name,"a"))==NULL){
+		printf("god can not open file\n");
+		return -1;
+	}
+	for (i=0; i<num_nodes; i++) {
+		if(!mb_node[i])printf("node pointer is null\n");
+		double s1=mb_node[i]->energy_model()->initialenergy();
+		double s2=mb_node[i]->energy_model()->energy();
+		sum=sum+(s1-s2);
+	}
+	fprintf(fp,"God : consumped_energy = %f\n", sum);
+	fclose(fp);
+	return sum;
+}
 
 bool God::ExistSource()
 {
@@ -821,7 +843,11 @@ God::command(int argc, const char* const* argv)
 		  ComputeRoute();
 		  return TCL_OK;
 		}
-
+		if(strcmp(argv[1], "compute_energy") == 0) {
+			double s2=ConsumpedEnergy();
+			printf("god: the energy consumped is %f\n",s2);
+			return TCL_OK;
+		}
                 if(strcmp(argv[1], "dump") == 0) {
 		        Dump();
                         return TCL_OK;
@@ -895,7 +921,12 @@ God::command(int argc, const char* const* argv)
 		  }
 		  return TCL_OK;
 	        }
-
+		if (strcasecmp(argv[1], "set_filename") == 0) {
+			printf("GOD: the old file name is%s\n",f_name);
+			strcpy(f_name,argv[2]);
+			printf("GOD: the new file name is%s\n",f_name);
+ 		  	return TCL_OK;
+ 	        }
 	        if (strcasecmp(argv[1], "is_on_trees") == 0) {
 		  int node_id = atoi(argv[2]);
 
@@ -997,6 +1028,17 @@ God::command(int argc, const char* const* argv)
 
 	    return TCL_OK;
 	  }
+	 // added by Peng Xie to return the minimum num of hops between n1 and n2, -1 if there is no path between n1 and n2
+ 	  if (strcasecmp(argv[1], "get_number_of_hop") == 0) {
+ 			int n1 = atoi(argv[2]);
+ 			int n2 = atoi(argv[3]);
+ 		   	printf("ok, the n1=%d and n2=%d hop=%d\n",n1,n2,MIN_HOPS(n1,n2));
+ 			if(MIN_HOPS(n1,n2)!=INFINITY) 
+ 				tcl.resultf("%d",MIN_HOPS(n1,n2));
+ 			else 
+ 				tcl.resultf("%d",-1);
+ 			return TCL_OK;
+ 	  }
 
 
 	  // We can add source from tcl script or call AddSource directly.

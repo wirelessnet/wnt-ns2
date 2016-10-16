@@ -161,8 +161,7 @@ private:
         void    format_aodv(Packet *p, int offset);
 	void    format_aomdv(Packet *p, int offset);
 	void    format_mdart(Packet *p, int offset);
-	void 	format_zbr(Packet *p, int offset);
-
+	void	format_sfama(Packet* p, int offset);
 	// This holds all the tracers added at run-time
 	static PacketTracer *pktTrc_;
 

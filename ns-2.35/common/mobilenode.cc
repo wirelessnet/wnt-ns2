@@ -63,7 +63,6 @@
 #include "phy.h"
 #include "wired-phy.h"
 #include "god.h"
-#include "../mac/mac-802_16/geographic.h"
 
 // XXX Must supply the first parameter in the macro otherwise msvc
 // is unhappy. 
@@ -464,7 +463,7 @@ MobileNode::set_destination(double x, double y, double s)
 }
 
 
-TOMAC *CalMod=new TOMAC;
+
 void 
 MobileNode::update_position()
 {
@@ -492,13 +491,7 @@ MobileNode::update_position()
 	// COMMENTED BY -VAL- // bound_position();
 
 	// COMMENTED BY -VAL- // Z_ = T_->height(X_, Y_);
-	if(CalMod->check(nodeid())==2)	goto Jump_;
-	else if(CalMod->check(nodeid())==0)
-	{	 
-		CalMod->enque(nodeid(),X_,Y_);
-		CalMod->unlock(nodeid());			
-	} 		
-Jump_:
+
 #if 0
 	fprintf(stderr, "Node: %d, X: %6.2f, Y: %6.2f, Z: %6.2f, time: %f\n",
 		address_, X_, Y_, Z_, now);
@@ -612,23 +605,4 @@ MobileNode::propdelay(MobileNode *m)
 void 
 MobileNode::idle_energy_patch(float /*total*/, float /*P_idle*/)
 {
-}
-
-void 
-MobileNode::log_loc(double error_, int no_ref_, double x, double y) 
-{ 
-	if (!log_target_) 
-		return; 
-	Scheduler &s = Scheduler::instance(); 
-	 
-	sprintf(log_target_->pt_->buffer(),"L %f %d %f %d %f %f %f", 
-				s.clock(), 
-				address_, 
-				energy_model_->energy(), 
-				no_ref_, 
-				error_, 
-				x, 
-				y); 
-
-	log_target_->pt_->dump(); 
 }

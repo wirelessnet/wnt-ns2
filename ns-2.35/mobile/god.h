@@ -52,6 +52,7 @@
 
 #include "node.h"
 #include "diffusion/hash_table.h"
+#include "underwatersensor/uw_common/underwatersensornode.h"
 
 
 // Added by Chalermek  12/1/99
@@ -154,7 +155,9 @@ public:
         int  *sink_table;
         int  *num_send;            // for each data type
         Data_Hash_Table dtab;
-
+        
+	char f_name[80];// added by peng xie to define the filename
+	double ConsumpedEnergy(); // add by peng xie to compute energy consumped
         void DumpNodeStatus();
         void DumpNumSend();
         void CountNewData(int *attr);

@@ -64,7 +64,8 @@
 //</zheng: add for 802.15.4>
 
 #include "diffusion/diff_header.h" // DIFFUSION -- Chalermek
-#include <../zbr/zbr_packet.h>
+#include "underwatersensor/uw_mac/underwaterchannel.h"
+#include "underwatersensor/uw_mac/slotted-fama/sfama-pkt.h"
 
 
 PacketTracer::PacketTracer() : next_(0)
@@ -860,6 +861,44 @@ CMUTrace::format_tora(Packet *p, int offset)
 }
 
 void
+CMUTrace::format_sfama(Packet* p, int offset)
+{
+		hdr_SFAMA* SFAMAh = hdr_SFAMA::access(p);
+		
+		char packet_name[50];
+		
+		switch( SFAMAh->packet_type ) {
+		  case hdr_SFAMA::SFAMA_RTS:
+			strcpy(packet_name, "RTS");
+			break;
+		  case hdr_SFAMA::SFAMA_CTS:
+			strcpy(packet_name, "CTS");
+			break;
+		  case hdr_SFAMA::SFAMA_DATA:
+			strcpy(packet_name, "DATA");
+			break;
+		  case hdr_SFAMA::SFAMA_ACK:
+			strcpy(packet_name, "ACK");
+		  default:
+			break;
+		}
+		
+		if( pt_->tagged() ) {
+		   sprintf(pt_->buffer() + offset,
+			    "-SFAMA:n %s", packet_name);
+		  
+		} else if (newtrace_ ) {
+		  sprintf(pt_->buffer() + offset, 
+			"-P SFAMA -Pt %s", packet_name);
+		  
+		} else {
+		   sprintf(pt_->buffer() + offset, 
+			"[SFAMA %s]", packet_name);
+		  
+		}
+}
+
+void
 CMUTrace::format_aodv(Packet *p, int offset)
 {
         struct hdr_aodv *ah = HDR_AODV(p);
@@ -1192,7 +1231,7 @@ CMUTrace::nam_format(Packet *p, int offset)
 	//	return;
 
 	struct hdr_mac802_11 *mh = HDR_MAC802_11(p);
-	char ptype[11];
+	char ptype[50];
 	strcpy(ptype,
 	((ch->ptype() == PT_MAC) ? (
 	  (mh->dh_fc.fc_subtype == MAC_Subtype_RTS) ? "RTS"  :
@@ -1349,173 +1388,159 @@ CMUTrace::nam_format(Packet *p, int offset)
 	    }   
         }
 
-	sprintf(pt_->nbuffer() ,
-		"%c -t %.9f -s %d -d %d -p %s -e %d -c 2 -a %d -i %d -k %3s",
-		op,
-		Scheduler::instance().clock(),
-		src_,                           // this node
-		next_hop,
-		ptype,			//<zheng: modify for 802.15.4>packet_info.name(ch->ptype()),
-		ch->size(),
-		pkt_color,
-		ch->uid(),
-		tracename);
-
-//<zheng: ns 2.27 removed the following part, but we need it to control the broadcast radius>
-if (Nam802_15_4::Nam_Status)
-{
-	if ((strcmp(tracename, "AGT") != 0) || ((u_int32_t)(ih->daddr()) == IP_BROADCAST))		//<zheng: add: next_hop info not available at agent level>
-											//(doesn't really matter -- seems agent level has no effect on nam)
-	if (next_hop == -1 && op == 'h') {
-		// print extra fields for broadcast packets
-
-		// bradius is calculated assuming 2-ray ground reflectlon
-		// model using default settings of Phy/WirelessPhy and
-		// Antenna/OmniAntenna
-		if (bradius == 0.0) calculate_broadcast_parameters();
-
-		double radius = bradius*radius_scaling_factor_; 
-
-		// duration is calculated based on the radius and
-		// the speed of light (299792458 m/s)
-		double duration = (bradius/299792458.0)*duration_scaling_factor_;
-		//<zheng: add -- the duration in 802.15.4 could be very small and rounded to 0.0>
-		if (Nam802_15_4::Nam_Status)
-		if (duration < 0.000000001)
-			duration = 0.000000001;
-		//</zheng: add>
-		sprintf(pt_->nbuffer() + strlen(pt_->nbuffer()),
-			" -R %.2f -D %.2f",
-			radius,
-			duration);
+	if( op=='h' or op=='r' ) {
+	
+		sprintf(pt_->nbuffer() ,
+			"%c -t %.9f -s %d -d %d -p %s -e %d -c 2 -a %d -i %d -k %3s -R %.6f",
+			op,
+			Scheduler::instance().clock(),
+			src_,                           // this node
+			next_hop,
+			ptype,			//<zheng: modify for 802.15.4>packet_info.name(ch->ptype()),
+			ch->size(),
+			pkt_color,
+			ch->uid(),
+			tracename,
+			UnderwaterChannel::Transmit_distance()
+			);
 	}
-}
-//</zheng>
+	else {
+		sprintf(pt_->nbuffer() ,
+			"%c -t %.9f -s %d -d %d -p %s -e %d -c 2 -a %d -i %d -k %3s",
+			op,
+			Scheduler::instance().clock(),
+			src_,                           // this node
+			next_hop,
+			ptype,			//<zheng: modify for 802.15.4>packet_info.name(ch->ptype()),
+			ch->size(),
+			pkt_color,
+			ch->uid(),
+			tracename);
+	}
 
+	//<zheng: ns 2.27 removed the following part, but we need it to control the broadcast radius>
+	if (Nam802_15_4::Nam_Status)
+	{
+		if ((strcmp(tracename, "AGT") != 0) || ((u_int32_t)(ih->daddr()) == IP_BROADCAST))		//<zheng: add: next_hop info not available at agent level>
+											//(doesn't really matter -- seems agent level has no effect on nam)
+		if (next_hop == -1 && op == 'h') {
+			// print extra fields for broadcast packets
+
+			// bradius is calculated assuming 2-ray ground reflectlon
+			// model using default settings of Phy/WirelessPhy and
+			// Antenna/OmniAntenna
+			if (bradius == 0.0) calculate_broadcast_parameters();
+			
+			double radius = bradius*radius_scaling_factor_; 
+
+			// duration is calculated based on the radius and
+			// the speed of light (299792458 m/s)
+			double duration = (bradius/299792458.0)*duration_scaling_factor_;
+			//<zheng: add -- the duration in 802.15.4 could be very small and rounded to 0.0>
+			if (Nam802_15_4::Nam_Status)
+				if (duration < 0.000000001)
+					duration = 0.000000001;
+			//</zheng: add>
+			sprintf(pt_->nbuffer() + strlen(pt_->nbuffer()),
+				" -R %.2f -D %.2f",
+				radius,
+				duration);
+		}
+	}
+	//</zheng>
 	offset = strlen(pt_->nbuffer());
 	pt_->namdump();
-}
 
-/*void
-CMUTrace::format_zbr(Packet *p, int offset)
-{
-	struct hdr_zbr* ph = HDR_ZBR(p);
-	if (pt_->tagged()) {
-		sprintf(pt_->buffer() + offset,"-zbr:o %d -zbr:s %d -zbr:l %d ",
-			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
-	} else if (newtrace_) {
-		sprintf(pt_->buffer() + offset,"-P zbr -Po %d -Ps %d -Pl %d ",
-			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
-	} else {
-		sprintf(pt_->buffer() + offset,"[zbr %d %d %d] ",
-			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
+	static int u_seq_id = 0;
+	u_seq_id++;
+	switch(op)
+	{
+		case 'h':
+			//forward packet
+			sprintf(pt_->nbuffer() ,
+				"v -t %.9f -e sim_annotation %.9f %d node %d sendout packet (%s) %d",
+				Scheduler::instance().clock(),
+				Scheduler::instance().clock(),
+				u_seq_id,
+				src_,
+				ptype,
+				ch->uid() );
+			/*
+			if( next_hop == -1 ) {
+				//broadcast packet
+				sprintf(pt_->nbuffer() ,
+					"v -t %.9f -e sim_annotation %.9f %d node %d sendout packet %d",
+					Scheduler::instance().clock(),
+					Scheduler::instance().clock(),
+					u_seq_id,
+					src_,
+					ch->uid() );
+				
+			}
+			else {
+				sprintf(pt_->nbuffer() ,
+					"v -t %.9f -e sim_annotation %.9f %d node %d forward %s %d to %d",
+					Scheduler::instance().clock(),
+					Scheduler::instance().clock(),
+					u_seq_id,
+					src_,
+					ptype,
+					ch->uid(),
+					next_hop );
+			}
+			*/
+			break;
+		case 'd':
+			//drop packet
+			sprintf(pt_->nbuffer() ,
+				"v -t %.9f -e sim_annotation %.9f %d node %d drop packet(%s) %d",
+				Scheduler::instance().clock(),
+				Scheduler::instance().clock(),
+				u_seq_id,
+				src_,                           // this node
+				ptype,
+				ch->uid());
+			break;
+		case 'r':
+			if( next_hop == -1 ) {
+				sprintf(pt_->nbuffer() ,
+					"v -t %.9f -e sim_annotation %.9f %d node %d receive packet(%s) %d",
+					Scheduler::instance().clock(),
+					Scheduler::instance().clock(),
+					u_seq_id,
+					node_->nodeid(),
+					ptype,
+					ch->uid() );
+				/*
+				sprintf(pt_->nbuffer() ,
+					"v -t %.9f -e sim_annotation %.9f %d node %d receive broadcast %s %d",
+					Scheduler::instance().clock(),
+					Scheduler::instance().clock(),
+					u_seq_id,
+					node_->nodeid(),
+					ptype,
+					ch->uid(),
+					);
+					*/
+			}
+			else {
+				sprintf(pt_->nbuffer() ,
+					"v -t %.9f -e sim_annotation %.9f %d node %d receive %s %d from %d",
+					Scheduler::instance().clock(),
+					Scheduler::instance().clock(),
+					u_seq_id,
+					next_hop,
+					ptype,
+					ch->uid(),
+					src_ );
+			}
+			break;
+
+		default:
+			break;
 	}
-}*/
-
-void
-CMUTrace::format_zbr(Packet *p, int offset)
-{
-        struct hdr_zbr *ah = HDR_ZBR(p);
-        struct hdr_zbr_request *rq = HDR_ZBR_REQUEST(p);
-        struct hdr_zbr_reply *rp = HDR_ZBR_REPLY(p);
-
-
-        switch(ah->ah_type) {
-        case ZBRTYPE_RREQ:
-
-		if (pt_->tagged()) {
-		    sprintf(pt_->buffer() + offset,
-			    "-zbr:t %x -zbr:h %d -zbr:b %d -zbr:d %d "
-			    "-zbr:ds %d -zbr:s %d -zbr:ss %d "
-			    "-zbr:c REQUEST ",
-			    rq->rq_type,
-                            rq->rq_hop_count,
-                            rq->rq_bcast_id,
-                            rq->rq_dst,
-                            rq->rq_dst_seqno,
-                            rq->rq_src,
-                            rq->rq_src_seqno);
-		} else if (newtrace_) {
-
-		    sprintf(pt_->buffer() + offset,
-			"-P zbr -Pt 0x%x -Ph %d -Pb %d -Pd %d -Pds %d -Ps %d -Pss %d -Pc REQUEST ",
-			rq->rq_type,
-                        rq->rq_hop_count,
-                        rq->rq_bcast_id,
-                        rq->rq_dst,
-                        rq->rq_dst_seqno,
-                        rq->rq_src,
-                        rq->rq_src_seqno);
-
-
-		} else {
-
-		    sprintf(pt_->buffer() + offset,
-			"[0x%x %d %d [%d %d] [%d %d]] (REQUEST)",
-			rq->rq_type,
-                        rq->rq_hop_count,
-                        rq->rq_bcast_id,
-                        rq->rq_dst,
-                        rq->rq_dst_seqno,
-                        rq->rq_src,
-                        rq->rq_src_seqno);
-		}
-                break;
-
-        case ZBRTYPE_RREP:
-        case ZBRTYPE_HELLO:
-	case ZBRTYPE_RERR:
-	case ZBRTYPE_RREP_ACK:
-		
-		if (pt_->tagged()) {
-		    sprintf(pt_->buffer() + offset,
-			    "-zbr:t %x -zbr:h %d -zbr:d %d -zbr:ds %d "
-			    "-zbr:l %f -zbr:c %s ",
-			    rp->rp_type,
-			    rp->rp_hop_count,
-			    rp->rp_dst,
-			    rp->rp_dst_seqno,
-			    rp->rp_lifetime,
-			    rp->rp_type == AODVTYPE_RREP ? "REPLY" :
-			    (rp->rp_type == AODVTYPE_RERR ? "ERROR" :
-			     "HELLO"));
-		} else if (newtrace_) {
-			
-			sprintf(pt_->buffer() + offset,
-			    "-P zbr -Pt 0x%x -Ph %d -Pd %d -Pds %d -Pl %f -Pc %s ",
-				rp->rp_type,
-				rp->rp_hop_count,
-				rp->rp_dst,
-				rp->rp_dst_seqno,
-				rp->rp_lifetime,
-				rp->rp_type == AODVTYPE_RREP ? "REPLY" :
-				(rp->rp_type == AODVTYPE_RERR ? "ERROR" :
-				 "HELLO"));
-	        } else {
-			
-			sprintf(pt_->buffer() + offset,
-				"[0x%x %d [%d %d] %f] (%s)",
-				rp->rp_type,
-				rp->rp_hop_count,
-				rp->rp_dst,
-				rp->rp_dst_seqno,
-				rp->rp_lifetime,
-				rp->rp_type == AODVTYPE_RREP ? "REPLY" :
-				(rp->rp_type == AODVTYPE_RERR ? "ERROR" :
-				 "HELLO"));
-		}
-                break;
-		
-        default:
-#ifdef WIN32
-                fprintf(stderr,
-		        "CMUTrace::format_zbr: invalid ZBR packet type\n");
-#else
-		fprintf(stderr,
-		        "%s: invalid ZBR packet type\n", __FUNCTION__);
-#endif
-                abort();
-        }
+	offset = strlen(pt_->nbuffer());
+	pt_->namdump();
 }
 
 void CMUTrace::format(Packet* p, const char *why)
@@ -1542,9 +1567,6 @@ void CMUTrace::format(Packet* p, const char *why)
 		format_ip(p, offset);
 		offset = strlen(pt_->buffer());
 		switch(ch->ptype()) {
-		case PT_ZBR:
-			format_zbr(p, offset);
-			break;
 		case PT_AODV:
 			format_aodv(p, offset);
 			break;
@@ -1582,6 +1604,29 @@ void CMUTrace::format(Packet* p, const char *why)
 		case PT_GAF:
 		case PT_PING:
 			break;
+		case PT_DBR:
+			break;
+              	case PT_UW_DROUTING:
+			break;
+		case PT_UWVB:
+			break;
+        	case PT_UWVBVA:
+            		break;
+        	case PT_RMAC:
+			break; 
+        	case PT_TMAC:
+			break;
+		
+        	case PT_UWAN_SYNC:
+        	case PT_UWAN_HELLO:
+        	case PT_UWAN_ML:
+			break;
+        	case PT_OTMAN:
+			break;
+        	case PT_UW_SROUTE:
+            		break;
+        	case PT_SFAMA:
+			format_sfama(p, offset);
 		default:
 
 			if(pktTrc_ && pktTrc_->format_unknow(p, offset, pt_, newtrace_))
@@ -1712,8 +1757,9 @@ void CMUTrace::calculate_broadcast_parameters() {
 	bradius = pow(P_t*G_r*G_t*pow(h,4.0)/(P_r*L), 0.25);
 	//<zheng: add for 802.15.4>
 	//the above calculation is not accurate for short distance
-	double PI,freq,lambda,crossover_dist;
-	PI = 3.14159265359;
+	//double PI,freq,lambda,crossover_dist;
+	//PI = 3.14159265359;
+	double freq,lambda,crossover_dist;
 	tcl.evalc("Phy/WirelessPhy set freq_");
 	freq = atof(tcl.result());
 	lambda = 3.0e8/freq;

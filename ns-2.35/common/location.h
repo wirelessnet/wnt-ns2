@@ -43,7 +43,6 @@
 
 class Location : public TclObject {
 public:
-	Location(): X(0), Y(0), Z(0) {}
 	Location(double x, double y, double z) {
 		X = x;
 		Y = y;
@@ -61,28 +60,7 @@ public:
 		*z = Z;
 	}
 	virtual void update_location() {}
-	virtual double getx() {return X;} 
-	virtual double gety() {return Y;} 
-	virtual double getz() {return Z;} 
 
-	virtual void setx(double x) {X = x;} 
-	virtual void sety(double y) {Y = y;} 
-	virtual void setz(double z) {Z = z;}
-	virtual int is_equal(Location *loc) 
-	{ 
-		if((X == loc->X) && (Y == loc->Y) && (Z == loc->Z)) 
-			return 1; 
-		else 
-			return 0; 
-	} 
-	virtual double distance(Location *loc) 
-	{ 
-		double dx = X - loc->X; 
-		double dy = Y - loc->Y; 
-		double dz = Z - loc->Z; 
-
-		return sqrt( dx * dx + dy * dy + dz * dz); 
-	}
 protected:
 	double X,Y,Z;        // 3-D coordinates
 };

@@ -137,6 +137,7 @@ source ns-node.tcl
 source ns-rtmodule.tcl
 source ns-hiernode.tcl
 source ns-mobilenode.tcl
+source ns-underwatersensornode.tcl
 source ns-bsnode.tcl
 source ns-link.tcl
 source ns-source.tcl
@@ -194,7 +195,6 @@ source ns-namsupp.tcl
 source ../mobility/dsdv.tcl
 source ../mobility/dsr.tcl
 source ../mobility/com.tcl
-source ../mobility/fsr.tcl
 
 source ../plm/plm.tcl
 source ../plm/plm-ns.tcl
@@ -301,8 +301,6 @@ Simulator instproc dumper obj {
 }
 
 # New node structure
-# added here to specify node attribute (beacon, reference or unknown) 
-#			-attribute BEACON/REFERECE/UNKNOWN
 #
 # Add APT to support multi-interface: user can specified multiple channels
 # when config nod. Still need modifications in routing agents to make
@@ -389,8 +387,6 @@ Simulator instproc rtAgentFunction {val} {$self set rtAgentFunction_ $val}
 # change wrt Mike's code
 Simulator instproc eotTrace  {val} { $self set eotTrace_  $val }
 Simulator instproc diffusionFilter {val} {$self set diffFilter_ $val}
-#used for location discovery process 
-Simulator instproc attribute {val} {$self set attribute_ $val}
 
 Simulator instproc MPLS { val } { 
 	if { $val == "ON" } {
@@ -458,7 +454,7 @@ Simulator instproc node-config args {
 	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ \
 	    chan topoInstance_ propInstance_ mobileIP_ \
 	    rxPower_ txPower_ idlePower_ sleepPower_ sleepTime_ transitionPower_ \
-	    transitionTime_ satNodeType_ eotTrace_ phyTrace_ attribute_
+	    transitionTime_ satNodeType_ eotTrace_ phyTrace_
 
 	if [info exists phyTrace_] {
 		Simulator set PhyTrace_ $phyTrace_
@@ -611,7 +607,7 @@ Simulator instproc create-wireless-node args {
 	    macType_ ifqType_ ifqlen_ phyType_ chan antType_ \
 	    energyModel_ initialEnergy_ txPower_ rxPower_ \
 	    idlePower_ sleepPower_ sleepTime_ transitionPower_ transitionTime_ \
-	    topoInstance_ level1_ level2_ inerrProc_ outerrProc_ FECProc_ rtAgentFunction_ attribute_
+	    topoInstance_ level1_ level2_ inerrProc_ outerrProc_ FECProc_ rtAgentFunction_
 
 	Simulator set IMEPFlag_ OFF
 
@@ -622,10 +618,6 @@ Simulator instproc create-wireless-node args {
         if { [info exist wiredRouting_] && $wiredRouting_ == "ON" } {
 		$node base-station [AddrParams addr2id [$node node-addr]]
     	}
-	#location discovery 
-	if [info exists attribute_] { 
-		$node set nodeAttribute_ $attribute_ 
-	}
         if {$rtAgentFunction_ != ""} {
 		set ragent [$self $rtAgentFunction_ $node]
 	} else {
@@ -633,17 +625,14 @@ Simulator instproc create-wireless-node args {
 		    DSDV {
 			    set ragent [$self create-dsdv-agent $node]
 		    }
+		    SillyRouting {
+			    set ragent [$self create-sillyrouting-agent $node]
+		    }
 		    DSR {
 			    $self at 0.0 "$node start-dsr"
 		    }
 		    AODV {
 			    set ragent [$self create-aodv-agent $node]
-		    }
-	    	    FSR {
-		    	    set ragent [$self create-fsr-agent $node]
-	    	    }
-		    ZBR {
-		    	    set ragent [$self create-zbr-agent $node]
 		    }
 		    AOMDV {
 			    set ragent [$self create-aomdv-agent $node]
@@ -657,6 +646,24 @@ Simulator instproc create-wireless-node args {
 		    TORA {
 			    Simulator set IMEPFlag_ ON
 			    set ragent [$self create-tora-agent $node]
+		    }
+		    StaticRouting {
+			    set ragent [$self creat-staticrouting-agent $node] 
+		    }
+		    DBR { 
+		   	    set ragent [$self create-dbr-agent $node]
+	   	    }
+		    Vectorbasedforward {
+			set ragent [$self create-vectorbasedforward-agent $node]
+		    }
+	    	    VectorbasedVoidAvoidance {
+			set ragent [$self create-vectorbasedvoidavoidance-agent $node]
+		    }
+		    UWFlooding {
+			set ragent [$self create-uwflooding-agent $node]
+		    }
+		    uw_drouting {
+			set ragent [$self create-uw_drouting-agent $node]             
 		    }
 		    DIFFUSION/RATE {
 			    eval $node addr $args
@@ -718,7 +725,12 @@ Simulator instproc create-wireless-node args {
             $routingAgent_ == "DIFFUSION/PROB" ||
             $routingAgent_ == "FLOODING" ||
             $routingAgent_ == "OMNIMCAST" ||
-	    $routingAgent_ == "Directed_Diffusion" } {
+	    $routingAgent_ == "Directed_Diffusion" ||
+	    $routingAgent_ == "DBR"|| 
+	    $routingAgent_ == "Vectorbasedforward"||
+	    $routingAgent_ == "VectorbasedVoidAvoidance"||
+	    $routingAgent_ == "UWFlooding" ||
+	    $routingAgent_ == "StaticRouting" } {
 		$ragent port-dmux [$node demux]
 		$node instvar ll_
 		$ragent add-ll $ll_(0)
@@ -791,30 +803,21 @@ Simulator instproc create-wireless-node args {
 }
 
 Simulator instproc create-node-instance args {
-	$self instvar routingAgent_
+	$self instvar routingAgent_ propType_
 	# DSR is a special case
 	if {$routingAgent_ == "DSR"} {
 		set nodeclass [$self set-dsr-nodetype]
 	} else {
-		set nodeclass Node/MobileNode
+		#added by Peng Xie to create underwater sensor node 
+		if {$propType_ == "Propagation/UnderwaterPropagation"} {
+			# puts "propagation type is $propType_"
+			set nodeclass Node/MobileNode/UnderwaterSensorNode
+			# puts "after create the underwatersensor node..."
+		} else { 
+			set nodeclass Node/MobileNode
+		}
 	}
 	return [eval new $nodeclass $args]
-}
-
-Simulator instproc create-fsr-agent { node } {
-	#create a FSR routing agent
-	set ragent [new Agent/FSR [$node node-addr]]
-        $self at 0.0 "$ragent start-fsr"     ;# start updates
-        $node set ragent_ $ragent
-        return $ragent
-}
-
-Simulator instproc create-zbr-agent { node } {
-	# Create zbr routing agent
-	set ragent [new Agent/ZBR [$node node-addr]]
-	$self at 0.0 "$ragent start"
-	$node set ragent_ $ragent
-	return $ragent
 }
 
 Simulator instproc set-dsr-nodetype {} {
@@ -854,6 +857,77 @@ Simulator instproc create-dsdv-agent { node } {
 	return $ragent
 }
 
+
+Simulator instproc create-sillyrouting-agent { node } {
+	set ragent [new Agent/SillyRouting]
+	set addr [$node node-addr]
+	$ragent node $node
+	$ragent addr $addr
+
+	$node set ragent_ $ragent
+	return $ragent
+}
+
+# dbr @ hai
+Simulator instproc create-dbr-agent { node } {
+	set ragent [new Agent/DBR]
+	$ragent node $node
+	$ragent start-dbr
+	$node set ragent_ $ragent
+	return $ragent
+}
+
+
+Simulator instproc creat-staticrouting-agent { node } {
+	set ragent [new Agent/StaticRouting]
+	set addr [$node node-addr]
+	$ragent node $node
+	$ragent addr $addr
+
+	$node set ragent_ $ragent
+	return $ragent
+
+}
+
+
+Simulator instproc create-vectorbasedforward-agent { node } {
+#        puts " I am in create vb"
+	set ragent [new Agent/Vectorbasedforward]
+	# puts " I am in create vb before assign a ragent"
+        $node set ragent_ $ragent
+	#puts " I am in create vb after ragent $ragent"
+        return $ragent
+}
+
+Simulator instproc create-vectorbasedvoidavoidance-agent { node } {
+#        puts " I am in create vb"
+	set ragent [new Agent/VectorbasedVoidAvoidance]
+	# puts " I am in create vb before assign a ragent"
+        $node set ragent_ $ragent
+	#puts " I am in create vb after ragent $ragent"
+        return $ragent
+}
+
+
+
+Simulator instproc create-uwflooding-agent { node } {
+#        puts " I am in create vb"
+	set ragent [new Agent/UWFlooding]
+	# puts " I am in create vb before assign a ragent"
+        $node set ragent_ $ragent
+	#puts " I am in create vb after ragent $ragent"
+        return $ragent
+}
+
+Simulator instproc create-uw_drouting-agent { node } {
+#        puts " I am in create vb"
+	set ragent [new Agent/uw_drouting [$node node-addr]]
+	# puts " I am in create vb before assign a ragent"
+       $self at 0.0 "$ragent start"
+        $node set ragent_ $ragent
+	#puts " I am in create vb after ragent $ragent"
+        return $ragent
+}
 
 Simulator instproc create-dumb-agent { node } {
 	
