@@ -95,7 +95,15 @@ public:
 		Packet *tmp = iter; iter = iter->next_;
 		return tmp;
 	}
-
+	int count(int grab) {	
+		int j = 0;
+		if (bytes_ <= grab) return len_;
+		for (int i = len_; i >= 0; i--, ++j) {			
+			if (grab <= 0) return j; 
+			else grab -= hdr_cmn::access(lookup(i-1))->size();			
+		}
+		return 0;	
+	}
 protected:
 	Packet* head_;
 	Packet* tail_;

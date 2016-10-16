@@ -72,7 +72,7 @@ INCLUDES = \
 	-I./diffusion3/lib/nr -I./diffusion3/ns \
 	-I./diffusion3/filter_core -I./asim/ -I./qs \
 	-I./diffserv -I./satellite \
-	-I./wpan
+	-I./wpan -I./location
 
 
 LIB	= \
@@ -333,6 +333,14 @@ OBJ_CC = \
 	wpan/p802_15_4sscs.o wpan/p802_15_4timer.o \
 	wpan/p802_15_4trace.o wpan/p802_15_4transac.o \
 	apps/pbc.o \
+	mudp/mudp.o mudp/mudpsink.o \
+	mac/mac-802_16/mac-802_16.o mac/mac-802_16/packet-802_16.o mac/mac-802_16/timer-802_16.o \
+	mac/mac-802_16/traffic/BE_traffic.o mac/mac-802_16/traffic/ertPS_traffic.o mac/mac-802_16/traffic/nrtPS_traffic.o \
+	mac/mac-802_16/traffic/rtPS_traffic.o mac/mac-802_16/traffic/UGS_traffic.o \
+	fsr/fsr.o fsr/fsr_rtable.o fsr/fsr_ttable.o \
+	zbr/zbr.o zbr/zbr_rtable.o zbr/zbr_rqueue.o zbr/zbr_link.o \
+	location/locationrequest.o location/locationresponse.o location/locationdiscovery.o \
+	location/mmse.o location/position.o location/nearestposition.o location/refineposition.o \
 	@V_STLOBJ@
 
 
@@ -494,6 +502,7 @@ NS_TCL_LIB = \
 	tcl/mcast/McastMonitor.tcl \
 	tcl/mobility/dsdv.tcl \
 	tcl/mobility/dsr.tcl \
+	tcl/mobility/fsr.tcl \
         tcl/ctr-mcast/CtrMcast.tcl \
         tcl/ctr-mcast/CtrMcastComp.tcl \
         tcl/ctr-mcast/CtrRPComp.tcl \
@@ -578,12 +587,12 @@ distclean-recursive:
 
 tags:	force
 	ctags -wtd *.cc *.h webcache/*.cc webcache/*.h dsdv/*.cc dsdv/*.h \
-	dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
+	fsr/*.cc fsr/*.h dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
 	../Tcl/*.cc ../Tcl/*.h 
 
 TAGS:	force
 	etags *.cc *.h webcache/*.cc webcache/*.h dsdv/*.cc dsdv/*.h \
-	dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
+	fsr/*.cc fsr/*.h dsr/*.cc dsr/*.h webcache/*.cc webcache/*.h lib/*.cc lib/*.h \
 	../Tcl/*.cc ../Tcl/*.h
 
 tcl/lib/TAGS:	force

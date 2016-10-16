@@ -194,6 +194,7 @@ source ns-namsupp.tcl
 source ../mobility/dsdv.tcl
 source ../mobility/dsr.tcl
 source ../mobility/com.tcl
+source ../mobility/fsr.tcl
 
 source ../plm/plm.tcl
 source ../plm/plm-ns.tcl
@@ -300,6 +301,8 @@ Simulator instproc dumper obj {
 }
 
 # New node structure
+# added here to specify node attribute (beacon, reference or unknown) 
+#			-attribute BEACON/REFERECE/UNKNOWN
 #
 # Add APT to support multi-interface: user can specified multiple channels
 # when config nod. Still need modifications in routing agents to make
@@ -386,6 +389,8 @@ Simulator instproc rtAgentFunction {val} {$self set rtAgentFunction_ $val}
 # change wrt Mike's code
 Simulator instproc eotTrace  {val} { $self set eotTrace_  $val }
 Simulator instproc diffusionFilter {val} {$self set diffFilter_ $val}
+#used for location discovery process 
+Simulator instproc attribute {val} {$self set attribute_ $val}
 
 Simulator instproc MPLS { val } { 
 	if { $val == "ON" } {
@@ -453,7 +458,7 @@ Simulator instproc node-config args {
 	    routerTrace_ agentTrace_ movementTrace_ channelType_ channel_ \
 	    chan topoInstance_ propInstance_ mobileIP_ \
 	    rxPower_ txPower_ idlePower_ sleepPower_ sleepTime_ transitionPower_ \
-	    transitionTime_ satNodeType_ eotTrace_ phyTrace_
+	    transitionTime_ satNodeType_ eotTrace_ phyTrace_ attribute_
 
 	if [info exists phyTrace_] {
 		Simulator set PhyTrace_ $phyTrace_
@@ -606,7 +611,7 @@ Simulator instproc create-wireless-node args {
 	    macType_ ifqType_ ifqlen_ phyType_ chan antType_ \
 	    energyModel_ initialEnergy_ txPower_ rxPower_ \
 	    idlePower_ sleepPower_ sleepTime_ transitionPower_ transitionTime_ \
-	    topoInstance_ level1_ level2_ inerrProc_ outerrProc_ FECProc_ rtAgentFunction_
+	    topoInstance_ level1_ level2_ inerrProc_ outerrProc_ FECProc_ rtAgentFunction_ attribute_
 
 	Simulator set IMEPFlag_ OFF
 
@@ -617,6 +622,10 @@ Simulator instproc create-wireless-node args {
         if { [info exist wiredRouting_] && $wiredRouting_ == "ON" } {
 		$node base-station [AddrParams addr2id [$node node-addr]]
     	}
+	#location discovery 
+	if [info exists attribute_] { 
+		$node set nodeAttribute_ $attribute_ 
+	}
         if {$rtAgentFunction_ != ""} {
 		set ragent [$self $rtAgentFunction_ $node]
 	} else {
@@ -629,6 +638,12 @@ Simulator instproc create-wireless-node args {
 		    }
 		    AODV {
 			    set ragent [$self create-aodv-agent $node]
+		    }
+	    	    FSR {
+		    	    set ragent [$self create-fsr-agent $node]
+	    	    }
+		    ZBR {
+		    	    set ragent [$self create-zbr-agent $node]
 		    }
 		    AOMDV {
 			    set ragent [$self create-aomdv-agent $node]
@@ -784,6 +799,22 @@ Simulator instproc create-node-instance args {
 		set nodeclass Node/MobileNode
 	}
 	return [eval new $nodeclass $args]
+}
+
+Simulator instproc create-fsr-agent { node } {
+	#create a FSR routing agent
+	set ragent [new Agent/FSR [$node node-addr]]
+        $self at 0.0 "$ragent start-fsr"     ;# start updates
+        $node set ragent_ $ragent
+        return $ragent
+}
+
+Simulator instproc create-zbr-agent { node } {
+	# Create zbr routing agent
+	set ragent [new Agent/ZBR [$node node-addr]]
+	$self at 0.0 "$ragent start"
+	$node set ragent_ $ragent
+	return $ragent
 }
 
 Simulator instproc set-dsr-nodetype {} {

@@ -92,7 +92,17 @@ AODV::command(int argc, const char*const* argv) {
 
       rtimer.handle((Event*) 0);
       return TCL_OK;
-     }               
+     }
+    //add by norbert
+    if (strcmp(argv[1], "blackhole") == 0) {
+	blackhole=1;
+	return (TCL_OK);
+    }
+   if (strcmp(argv[1], "greyhole") == 0) {
+	greyhole=1;
+	return (TCL_OK);
+   }
+   //add by norbert            
   }
   else if(argc == 3) {
     if(strcmp(argv[1], "index") == 0) {
@@ -149,6 +159,10 @@ AODV::AODV(nsaddr_t id) : Agent(PT_AODV),
 
   logtarget = 0;
   ifqueue = 0;
+  //add by norbert
+  greyhole=0;
+  blackhole=0;
+  //add by norbert
 }
 
 /*
@@ -557,6 +571,19 @@ void
 AODV::recv(Packet *p, Handler*) {
 struct hdr_cmn *ch = HDR_CMN(p);
 struct hdr_ip *ih = HDR_IP(p);
+
+if (blackhole == 1 && ch->ptype() != PT_AODV) {
+	drop(p);
+	return;
+}
+float time= CURRENT_TIME;
+srand((unsigned)CURRENT_TIME);
+int random_integer = rand();
+int flag1=(random_integer%2);
+if ((flag1) && (ch->ptype() != PT_AODV) && (greyhole == 1)) {
+	drop(p);
+	return;
+}
 
  assert(initialized());
  //assert(p->incoming == 0);

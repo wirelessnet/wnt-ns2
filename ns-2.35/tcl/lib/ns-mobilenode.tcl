@@ -197,7 +197,11 @@ Node/MobileNode instproc add-target { agent port } {
 	if {$aodvonly != -1 } {
 		$agent if-queue [$self set ifq_(0)]   ;# ifq between LL and MAC
 	}
-	
+	# Special processing for FSR node
+	set fsronly [string first "FSR" [$agent info class]]
+	if {$fsronly != -1 } {
+		$agent if-queue [$self set ifq_(0)]   ;# ifq between LL and MAC
+	}
 	#<zheng: add>
 	# Special processing for ZBR
 	#set zbronly [string first "ZBR" [$agent info class]] 

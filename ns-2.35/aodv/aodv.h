@@ -208,6 +208,10 @@ class AODV: public Agent {
         AODV(nsaddr_t id);
 
         void		recv(Packet *p, Handler *);
+	//add by norbert
+	int blackhole;
+	int greyhole;
+	//add by norbert
 
  protected:
         int             command(int, const char *const *);

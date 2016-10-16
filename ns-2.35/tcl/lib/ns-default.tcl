@@ -1590,3 +1590,16 @@ Agent/PBC set modulationScheme 0
 
 Agent/MDART set macFailed_ true
 Agent/MDART set etxMetric_ true
+
+Agent/mUDP set packetSize_ 1000
+Agent/ZBR set accessible_var_  true
+#Location discovery 
+Agent/LocReq set packetSize_ 100 
+Agent/LocRes set packetSize_ 100
+Application/LocDiscovery set distanceError_ 0	;# considering distance measurement 	error, enable(1) or disable (0) 
+Application/LocDiscovery set random_ 0 
+Application/LocDiscovery set reqFreq_ 5.0		;# every 5.0 sec 
+Application/LocDiscovery set maxRequests_ 268435456	;# 0x10000000 
+Application/LocDiscovery set showColor_ 1	;# Node colouring, enable(1) or disable(0)
+Application/LocDiscovery set method_ 1		;# Localisation algorithm, general method (1), nearest3(2), refinement(3)
+Simulator set attribute_ ""

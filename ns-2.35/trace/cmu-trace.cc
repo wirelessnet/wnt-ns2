@@ -64,6 +64,7 @@
 //</zheng: add for 802.15.4>
 
 #include "diffusion/diff_header.h" // DIFFUSION -- Chalermek
+#include <../zbr/zbr_packet.h>
 
 
 PacketTracer::PacketTracer() : next_(0)
@@ -1395,6 +1396,128 @@ if (Nam802_15_4::Nam_Status)
 	pt_->namdump();
 }
 
+/*void
+CMUTrace::format_zbr(Packet *p, int offset)
+{
+	struct hdr_zbr* ph = HDR_ZBR(p);
+	if (pt_->tagged()) {
+		sprintf(pt_->buffer() + offset,"-zbr:o %d -zbr:s %d -zbr:l %d ",
+			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
+	} else if (newtrace_) {
+		sprintf(pt_->buffer() + offset,"-P zbr -Po %d -Ps %d -Pl %d ",
+			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
+	} else {
+		sprintf(pt_->buffer() + offset,"[zbr %d %d %d] ",
+			ph->pkt_src(),ph->pkt_seq_num(),ph->pkt_len());
+	}
+}*/
+
+void
+CMUTrace::format_zbr(Packet *p, int offset)
+{
+        struct hdr_zbr *ah = HDR_ZBR(p);
+        struct hdr_zbr_request *rq = HDR_ZBR_REQUEST(p);
+        struct hdr_zbr_reply *rp = HDR_ZBR_REPLY(p);
+
+
+        switch(ah->ah_type) {
+        case ZBRTYPE_RREQ:
+
+		if (pt_->tagged()) {
+		    sprintf(pt_->buffer() + offset,
+			    "-zbr:t %x -zbr:h %d -zbr:b %d -zbr:d %d "
+			    "-zbr:ds %d -zbr:s %d -zbr:ss %d "
+			    "-zbr:c REQUEST ",
+			    rq->rq_type,
+                            rq->rq_hop_count,
+                            rq->rq_bcast_id,
+                            rq->rq_dst,
+                            rq->rq_dst_seqno,
+                            rq->rq_src,
+                            rq->rq_src_seqno);
+		} else if (newtrace_) {
+
+		    sprintf(pt_->buffer() + offset,
+			"-P zbr -Pt 0x%x -Ph %d -Pb %d -Pd %d -Pds %d -Ps %d -Pss %d -Pc REQUEST ",
+			rq->rq_type,
+                        rq->rq_hop_count,
+                        rq->rq_bcast_id,
+                        rq->rq_dst,
+                        rq->rq_dst_seqno,
+                        rq->rq_src,
+                        rq->rq_src_seqno);
+
+
+		} else {
+
+		    sprintf(pt_->buffer() + offset,
+			"[0x%x %d %d [%d %d] [%d %d]] (REQUEST)",
+			rq->rq_type,
+                        rq->rq_hop_count,
+                        rq->rq_bcast_id,
+                        rq->rq_dst,
+                        rq->rq_dst_seqno,
+                        rq->rq_src,
+                        rq->rq_src_seqno);
+		}
+                break;
+
+        case ZBRTYPE_RREP:
+        case ZBRTYPE_HELLO:
+	case ZBRTYPE_RERR:
+	case ZBRTYPE_RREP_ACK:
+		
+		if (pt_->tagged()) {
+		    sprintf(pt_->buffer() + offset,
+			    "-zbr:t %x -zbr:h %d -zbr:d %d -zbr:ds %d "
+			    "-zbr:l %f -zbr:c %s ",
+			    rp->rp_type,
+			    rp->rp_hop_count,
+			    rp->rp_dst,
+			    rp->rp_dst_seqno,
+			    rp->rp_lifetime,
+			    rp->rp_type == AODVTYPE_RREP ? "REPLY" :
+			    (rp->rp_type == AODVTYPE_RERR ? "ERROR" :
+			     "HELLO"));
+		} else if (newtrace_) {
+			
+			sprintf(pt_->buffer() + offset,
+			    "-P zbr -Pt 0x%x -Ph %d -Pd %d -Pds %d -Pl %f -Pc %s ",
+				rp->rp_type,
+				rp->rp_hop_count,
+				rp->rp_dst,
+				rp->rp_dst_seqno,
+				rp->rp_lifetime,
+				rp->rp_type == AODVTYPE_RREP ? "REPLY" :
+				(rp->rp_type == AODVTYPE_RERR ? "ERROR" :
+				 "HELLO"));
+	        } else {
+			
+			sprintf(pt_->buffer() + offset,
+				"[0x%x %d [%d %d] %f] (%s)",
+				rp->rp_type,
+				rp->rp_hop_count,
+				rp->rp_dst,
+				rp->rp_dst_seqno,
+				rp->rp_lifetime,
+				rp->rp_type == AODVTYPE_RREP ? "REPLY" :
+				(rp->rp_type == AODVTYPE_RERR ? "ERROR" :
+				 "HELLO"));
+		}
+                break;
+		
+        default:
+#ifdef WIN32
+                fprintf(stderr,
+		        "CMUTrace::format_zbr: invalid ZBR packet type\n");
+#else
+		fprintf(stderr,
+		        "%s: invalid ZBR packet type\n", __FUNCTION__);
+#endif
+                abort();
+        }
+}
+
 void CMUTrace::format(Packet* p, const char *why)
 {
 	hdr_cmn *ch = HDR_CMN(p);
@@ -1419,6 +1542,9 @@ void CMUTrace::format(Packet* p, const char *why)
 		format_ip(p, offset);
 		offset = strlen(pt_->buffer());
 		switch(ch->ptype()) {
+		case PT_ZBR:
+			format_zbr(p, offset);
+			break;
 		case PT_AODV:
 			format_aodv(p, offset);
 			break;

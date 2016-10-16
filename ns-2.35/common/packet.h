@@ -54,6 +54,9 @@
 #define HDR_ARP(p)      (hdr_arp::access(p))
 #define HDR_MAC(p)      (hdr_mac::access(p))
 #define HDR_MAC802_11(p) ((hdr_mac802_11 *)hdr_mac::access(p))
+#define HDR_MAC802_16(p) ((hdr_mac802_16 *)hdr_mac802_16::access(p))
+#define SUBHDR_Pack(p) ((subhdr_pack*)subhdr_pack::access(p))
+#define SUBHDR_Frag(p) ((subhdr_frag*)subhdr_frag::access(p))
 #define HDR_MAC_TDMA(p) ((hdr_mac_tdma *)hdr_mac::access(p))
 #define HDR_SMAC(p)     ((hdr_smac *)hdr_mac::access(p))
 #define HDR_LL(p)       (hdr_ll::access(p))
@@ -69,6 +72,8 @@
 #define HDR_CDIFF(p)    (hdr_cdiff::access(p))  /* chalermak's diffusion*/
 //#define HDR_DIFF(p)     (hdr_diff::access(p))  /* SCADD's diffusion ported into ns */
 #define HDR_LMS(p)		(hdr_lms::access(p))
+#define HDR_LOCREQ(p)	(hdr_locreq::access(p))		//location request 
+#define HDR_LOCRES(p)	(hdr_locres::access(p))		//location response
 
 /* --------------------------------------------------------------------*/
 
@@ -198,9 +203,33 @@ static const packet_t PT_DCCP_RESET = 71;
 
         // M-DART packets
 static const packet_t PT_MDART = 72;
-	
+
+/*IEEE 802.16 packet*/	
+static const packet_t PT_UGS = 73;
+static const packet_t PT_rtPS = 74;
+static const packet_t PT_ertPS = 75;
+static const packet_t PT_nrtPS = 76;
+static const packet_t PT_BE = 77;
+static const packet_t PT_BWREQ = 78;
+static const packet_t PT_UCD = 79;
+static const packet_t PT_DCD = 80;
+static const packet_t PT_DLMAP = 81;
+static const packet_t PT_ULMAP = 82;
+static const packet_t PT_RNGREQ = 83;
+static const packet_t PT_RNGRSP = 84;
+static const packet_t PT_DSAREQ = 85;
+static const packet_t PT_DSARSP = 86;
+static const packet_t PT_DSAACK = 87;
+static const packet_t PT_DSXRVD = 88;
+
+static const packet_t PT_ZBR = 89;
+
+// Location request and response packets 
+static const packet_t PT_LOCREQ = 90;
+static const packet_t PT_LOCRES = 91;
+
         // insert new packet types here
-static packet_t       PT_NTYPE = 73; // This MUST be the LAST one
+static packet_t       PT_NTYPE = 92; // This MUST be the LAST one
 
 enum packetClass
 {
@@ -416,6 +445,28 @@ public:
 		name_[PT_DCCP_CLOSE]="DCCP_Close";
 		name_[PT_DCCP_CLOSEREQ]="DCCP_CloseReq";
 		name_[PT_DCCP_RESET]="DCCP_Reset";
+		/*IEEE 802.16 packet*/
+		name_[PT_UGS]="UGS";
+		name_[PT_rtPS]="rtPS";
+		name_[PT_ertPS]="ertPS";
+		name_[PT_nrtPS]="nrtPS";
+		name_[PT_BE]="BE";
+		name_[PT_BWREQ]="BWREQ";
+		name_[PT_UCD]="UCD";
+		name_[PT_DCD]="DCD";
+		name_[PT_DLMAP]="DLMAP";
+		name_[PT_ULMAP]="ULMAP";
+		name_[PT_RNGREQ]="RNGREQ";
+		name_[PT_RNGRSP]="RNGRSP";
+		name_[PT_DSAREQ]="DSAREQ";
+		name_[PT_DSARSP]="DSARSP";
+		name_[PT_DSAACK]="DSAACK";
+		name_[PT_DSXRVD]="DSXRVD";
+
+		name_[PT_ZBR]= "zbr";
+		// location request and response 
+		name_[PT_LOCREQ] = "locreq";
+		name_[PT_LOCRES] = "locres";
 
 		name_[PT_NTYPE]= "undefined";
 	}
@@ -498,6 +549,7 @@ protected:
 public:
 	Packet* next_;		// for queues and the free list
 	static int hdrlen_;
+	int type_;
 
 	Packet() : bits_(0), data_(0), ref_count_(0), next_(0) { }
 	inline unsigned char* bits() { return (bits_); }
@@ -616,6 +668,10 @@ struct hdr_cmn {
 	nsaddr_t next_hop_;	// next hop for this packet
 	int      addr_type_;    // type of next_hop_ addr
 	nsaddr_t last_hop_;     // for tracing on multi-user channels
+	int frametype_;
+	double sendtime_;
+	unsigned int pkt_id_;
+	unsigned int frame_pkt_id_;
 	
 	// AOMDV patch
 	int aomdv_salvage_count_;

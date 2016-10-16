@@ -179,6 +179,9 @@ set protolist {
 	MDART 	# routing protocol for ad-hoc networks
 	# AOMDV patch
 	AOMDV
+	ZBR
+	LocReq	#Location Request 
+	LocRes	#Location Response
 # Other:
 	Encap 	# common/encap.cc
         IPinIP 	# IP encapsulation 

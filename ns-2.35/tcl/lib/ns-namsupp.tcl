@@ -67,22 +67,36 @@ Node instproc get-shape {} {
 	}
 }
 
-Node instproc color { color } {
-	$self instvar attr_ id_
+#Node instproc color { color } {
+#	$self instvar attr_ id_
+#
+#	set ns [Simulator instance]
+#
+#	if [$ns is-started] {
+#		# color must be initialized
+#
+#		$ns puts-nam-config \
+#		[eval list "n -t [format "%.15g" [$ns now]] -s $id_ -S COLOR -c $color -o $attr_(COLOR) -i $color -I $attr_(LCOLOR)"]
+#		set attr_(COLOR) $color
+#	        set attr_(LCOLOR) $color
+#	} else {
+#		set attr_(COLOR) $color
+#	        set attr_(LCOLOR) $color
+#	}
+#}
+#enable changing the node's color after running the simulator by Ian Downard
+Node instproc color { color } { 
+	$self instvar attr_ id_ 
 
-	set ns [Simulator instance]
+	set ns [Simulator instance] 
 
-	if [$ns is-started] {
-		# color must be initialized
-
+	set attr_(COLOR) $color 
+	set attr_(LCOLOR) $color 
+	if [$ns is-started] { 
+		# color must be initialized 
 		$ns puts-nam-config \
-		[eval list "n -t [format "%.15g" [$ns now]] -s $id_ -S COLOR -c $color -o $attr_(COLOR) -i $color -I $attr_(LCOLOR)"]
-		set attr_(COLOR) $color
-	        set attr_(LCOLOR) $color
-	} else {
-		set attr_(COLOR) $color
-	        set attr_(LCOLOR) $color
-	}
+		[eval list "n -t [$ns now] -s $id_ -S COLOR -c $color -o $attr_(COLOR) -i $color -I $attr_(LCOLOR)"] 
+	} 
 }
 
 Node instproc label { str} {
