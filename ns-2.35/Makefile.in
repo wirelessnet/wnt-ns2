@@ -72,7 +72,7 @@ INCLUDES = \
 	-I./diffusion3/lib/nr -I./diffusion3/ns \
 	-I./diffusion3/filter_core -I./asim/ -I./qs \
 	-I./diffserv -I./satellite \
-	-I./wpan
+	-I./wpan -I./wimax
 
 
 LIB	= \
@@ -361,6 +361,24 @@ OBJ_CC = \
     underwatersensor/uw_mobility_pattern/uw_mobility_kinematic.o \
     dbr/dbr.o dbr/pkt_cache.o aodv/watchdog/beta.o aodv/watchdog/neighbours.o \
     aodv/watchdog/packets.o aodv/watchdog/watchdog.o \
+    wimax/ofdmphy.o wimax/mac802_16pkt.o \
+    wimax/scheduling/wimaxscheduler.o wimax/scheduling/bsscheduler.o \
+    wimax/scheduling/ssscheduler.o wimax/scheduling/ulsubframetimer.o \
+    wimax/scheduling/dlsubframetimer.o \
+    wimax/scheduling/burst.o wimax/scheduling/contentionslot.o \
+    wimax/scheduling/contentionrequest.o wimax/scheduling/contentiontimer.o \
+    wimax/scheduling/dlburst.o wimax/scheduling/ulburst.o \
+    wimax/scheduling/framemap.o wimax/scheduling/phypdu.o \
+    wimax/scheduling/profile.o wimax/scheduling/subframe.o \
+    wimax/scheduling/scanningstation.o \
+    wimax/serviceflowqos.o wimax/serviceflow.o \
+    wimax/serviceflowhandler.o \
+    wimax/connection.o wimax/connectionmanager.o wimax/peernode.o \
+    wimax/mac802_16.o wimax/mac802_16BS.o wimax/mac802_16SS.o \
+    wimax/sduclassifier.o \
+    wimax/destclassifier.o wimax/mac802_16timer.o \
+    wimax/wimaxneighborentry.o wimax/neighbordb.o \
+    wimax/scheduling/wimaxctrlagent.o \
 	@V_STLOBJ@
 
 
@@ -504,6 +522,7 @@ NS_TCL_LIB = \
 	tcl/lib/ns-address.tcl \
 	tcl/lib/ns-intserv.tcl \
 	tcl/lib/ns-autoconf.tcl \
+	tcl/lib/ns-wimax.tcl \
 	tcl/rtp/session-rtp.tcl \
 	tcl/lib/ns-mip.tcl \
 	tcl/rtglib/dynamics.tcl \

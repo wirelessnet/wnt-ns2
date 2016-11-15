@@ -218,6 +218,9 @@ source ns-pushback.tcl
 #LMS
 source ../mcast/ns-lms.tcl
 
+#WiMAX
+source ns-wimax.tcl
+
 # STL dependent modules get included
 # ONLY when STL is found
 
